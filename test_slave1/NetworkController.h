@@ -2,7 +2,10 @@
 #define NETWORKCONTROLLER_H
 
 #include "Arduino.h"
-#include <EEPROM.h>
+// #include <EEPROM.h>
+
+#define DEBUG_SERIAL  Serial
+#define DXL_SERIAL    Serial1
 
 /*
 protocol V2: http://support.robotis.com/en/product/actuator/dynamixel_pro/communication/instruction_status_packet.htm
@@ -31,14 +34,12 @@ protocol V2: http://support.robotis.com/en/product/actuator/dynamixel_pro/commun
 		|	-compute_crc(...) : unsigned short		   cf--->  |  cf:  http://support.robotis.com/en/product/actuator/dynamixel_pro/communication/crc.htm
 		|______________________________________________________|
 
-
-
 */
 
 class NetworkController
 {
   public:
-  unsigned char ID;
+  const unsigned char ID {1};
   unsigned char tabRegister[100];
   
     //  default
@@ -95,10 +96,13 @@ class NetworkController
 	
 	//
 	
-	#define MODEL_NUMBER 0x0406
+	#define MODEL_NUMBER 1020
+	#define BAUDRATE 57600
+
+	// #define MODEL_NUMBER 0x0406
 	#define FIRMWARE 0x26
 	
-	#define BAUDRATE 115200
+	// #define BAUDRATE 115200
 	//
 
 	

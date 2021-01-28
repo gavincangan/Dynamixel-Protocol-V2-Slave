@@ -1,9 +1,9 @@
-#include "networkcontroller.h"
-#include "register.h"
+#include "NetworkController.h"
+#include "Register.h"
 
 void NetworkController::resetMachineState()
  {
-	Serial.println("ResetMachineState called!");
+	DEBUG_SERIAL.println("ResetMachineState called!");
 	state=0;
 	//instruction=0x00;
 	messageIndex=0x00;
@@ -66,20 +66,22 @@ void NetworkController::machineState(unsigned char data)
 	switch(state)
 	 {
 		case 0:
+		 DEBUG_SERIAL.println("case 0");
 		 if(data==HEADER_1)
 		 {
 			state=1;
-			Serial.print("N1: ");
-			Serial.println(data);
+			DEBUG_SERIAL.print("N1: ");
+			DEBUG_SERIAL.println(data);
 		 }
 		 break;
 
 		case 1:
+		 DEBUG_SERIAL.println("case 1");
  		 if(data==HEADER_2)
 		 {
 			state=2;
-			Serial.print("N2: ");
-			Serial.println(data);
+			DEBUG_SERIAL.print("N2: ");
+			DEBUG_SERIAL.println(data);
 		 }
 		 else
 		 {
@@ -89,11 +91,12 @@ void NetworkController::machineState(unsigned char data)
 
 
 		case 2:
+		 DEBUG_SERIAL.println("case 2");
 		 if(data==HEADER_3)
 		 {
 			state=3;
-			Serial.print("N3: ");
-			Serial.println(data);
+			DEBUG_SERIAL.print("N3: ");
+			DEBUG_SERIAL.println(data);
 		 }
 		 else
 		 {
@@ -103,11 +106,12 @@ void NetworkController::machineState(unsigned char data)
 
 
 		case 3:
+		 DEBUG_SERIAL.println("case 3");
 		 if(data==RESERVED)
 		 {
 			state=4;
-			Serial.print("N4: ");
-			Serial.println(data);
+			DEBUG_SERIAL.print("N4: ");
+			DEBUG_SERIAL.println(data);
 		 }
 		 else
 		 {
@@ -117,36 +121,42 @@ void NetworkController::machineState(unsigned char data)
 
 
 		case 4:
+		 DEBUG_SERIAL.println("case 4");
 		 if(data==ID || data==BROADCAST_ID )
 		 {
 			state=5;
-			Serial.print("N5: ");
-			Serial.println(data);
+			DEBUG_SERIAL.print("N5: ");
+			DEBUG_SERIAL.println(data);
 		 }
 		 else
 		 {
+			DEBUG_SERIAL.print("xN5: ");
+			DEBUG_SERIAL.println(data);
 			resetMachineState();
 		 }
 		 break;
 
 
-		case 5:                   //Lenght_Low
+		case 5:
+		 DEBUG_SERIAL.println("case 5");                   //Lenght_Low
 		 messageLength=data;
 		 messageData[5]=data;
 		 state=6;
 		 break;
 
-		case 6:                   //Lenght_High
+		case 6:
+		 DEBUG_SERIAL.println("case 6");                   //Lenght_High
 		 messageLength=messageLength+(data<<8);     //messageLenght|=data*256;
 		 messageData[6]=data;
 		 state=7;
-		 Serial.print("MessageLength (N7): ");
-		 Serial.println(messageLength);
-		 Serial.print("number of Parameter: ");
-		 Serial.println(messageLength-3);
+		 DEBUG_SERIAL.print("MessageLength (N7): ");
+		 DEBUG_SERIAL.println(messageLength);
+		 DEBUG_SERIAL.print("number of Parameter: ");
+		 DEBUG_SERIAL.println(messageLength-3);
 		 break;
 
 		case 7:
+		 DEBUG_SERIAL.println("case 7");
 		 instruction=data;
 		 if (instruction==INST_PING)
 		 {
@@ -159,31 +169,34 @@ void NetworkController::machineState(unsigned char data)
 		 break;
 
 		case 8:
+		 DEBUG_SERIAL.println("case 8");
 		 messageData[messageIndex+8]=data;
 		 messageIndex++;
 		 if(messageIndex>=messageLength-3)
 		 {
-			Serial.print("Param: ");
-			Serial.println(data);
+			DEBUG_SERIAL.print("Param: ");
+			DEBUG_SERIAL.println(data);
 			tabParameter[index_tabParameter]=data;
 			index_tabParameter=0;
 			state=9;
 		 }
 		 else
 		 {
-			Serial.print("Param: ");
-			Serial.println(data);
+			DEBUG_SERIAL.print("Param: ");
+			DEBUG_SERIAL.println(data);
 			tabParameter[index_tabParameter]=data;
 			index_tabParameter++;
 		 }
 		 break;
 
 		case 9:
+		 DEBUG_SERIAL.println("case 9");
 		 crc=data;
 		 state=10;
 		 break;
 
 		case 10:
+		 DEBUG_SERIAL.println("case 10");
 		 crc=crc+(data<<8);
 		 messageData[0]=HEADER_1;
 		 messageData[1]=HEADER_2; 
@@ -191,26 +204,26 @@ void NetworkController::machineState(unsigned char data)
 		 messageData[3]=RESERVED;
 		 messageData[4]=ID;
 		 messageData[7]=instruction;
-		 Serial.println("parametre tab: ");
-		 Serial.println(tabParameter[0]);
-		 Serial.println(tabParameter[1]);
-		 Serial.println(tabParameter[2]);
-		 Serial.println(tabParameter[3]);
-		 Serial.print("crc received: ");
-		 Serial.println(crc);
+		 DEBUG_SERIAL.println("parametre tab: ");
+		 DEBUG_SERIAL.println(tabParameter[0]);
+		 DEBUG_SERIAL.println(tabParameter[1]);
+		 DEBUG_SERIAL.println(tabParameter[2]);
+		 DEBUG_SERIAL.println(tabParameter[3]);
+		 DEBUG_SERIAL.print("crc received: ");
+		 DEBUG_SERIAL.println(crc);
 		 crc_compute = compute_crc(0, messageData, messageLength+5);
-		 Serial.print("crc compute: ");
-		 Serial.println(crc_compute);
+		 DEBUG_SERIAL.print("crc compute: ");
+		 DEBUG_SERIAL.println(crc_compute);
 		 if(crc_compute==crc)
 		 {
-			 Serial.println("CRC -> OK");
-			 Serial.print("instruction");
-			 Serial.println(instruction); 
+			 DEBUG_SERIAL.println("CRC -> OK");
+			 DEBUG_SERIAL.print("instruction");
+			 DEBUG_SERIAL.println(instruction); 
 			 returnStatus();
 		 }
 		 else
 		 {
-			 Serial.println("CRC is not good: Packet has been damaged during communication");
+			 DEBUG_SERIAL.println("CRC is not good: Packet has been damaged during communication");
 		 }
 		 resetMachineState();
 		 break;
@@ -253,38 +266,36 @@ void NetworkController::returnStatus()
 		 returnPacket[12]=crc_compute & 0xFF;
 		 returnPacket[13]=crc_compute >> 8;
 		 //
-		 Serial.println("retour");		
-		 Serial.println(returnPacket[0]);
-		 Serial.println(returnPacket[1]);
-		 Serial.println(returnPacket[2]);
-		 Serial.println(returnPacket[3]);
-		 Serial.println(returnPacket[4]);
-		 Serial.println(returnPacket[5]);
-		 Serial.println(returnPacket[6]);
-		 Serial.println(returnPacket[7]);
-		 Serial.println(returnPacket[8]);
-		 Serial.println(returnPacket[9]);
-		 Serial.println(returnPacket[10]);
-		 Serial.println(returnPacket[11]);
-		 Serial.print("crc:");	
-		  Serial.println(crc_compute);	
-		 Serial.println(returnPacket[12]);
-		 Serial.println(returnPacket[13]);
+		 DEBUG_SERIAL.println("retour");		
+		 DEBUG_SERIAL.println(returnPacket[0]);
+		 DEBUG_SERIAL.println(returnPacket[1]);
+		 DEBUG_SERIAL.println(returnPacket[2]);
+		 DEBUG_SERIAL.println(returnPacket[3]);
+		 DEBUG_SERIAL.println(returnPacket[4]);
+		 DEBUG_SERIAL.println(returnPacket[5]);
+		 DEBUG_SERIAL.println(returnPacket[6]);
+		 DEBUG_SERIAL.println(returnPacket[7]);
+		 DEBUG_SERIAL.println(returnPacket[8]);
+		 DEBUG_SERIAL.println(returnPacket[9]);
+		 DEBUG_SERIAL.println(returnPacket[10]);
+		 DEBUG_SERIAL.println(returnPacket[11]);
+		 DEBUG_SERIAL.print("crc:");	
+		 DEBUG_SERIAL.println(crc_compute);	
+		 DEBUG_SERIAL.println(returnPacket[12]);
+		 DEBUG_SERIAL.println(returnPacket[13]);
 		 
 		 tab_lenght=14;
-		 //Serial.write(returnPacket, tab_lenght);
+		 //DEBUG_SERIAL.write(returnPacket, tab_lenght);
 		 
 		 digitalWrite(2, LOW);
-		 Serial1.write(returnPacket, tab_lenght);
+		 DXL_SERIAL.write(returnPacket, tab_lenght);
 		 resetMachineState();
-		 Serial1.flush();
+		 DXL_SERIAL.flush();
 		 digitalWrite(2, HIGH);
 		 break;
 	
 	 
 		 case INST_READ:
-		 
-		 
 		 //Header and Reserved
 		 returnPacket[0]=HEADER_1;					//Default: 0xFF
 		 returnPacket[1]=HEADER_2;					//Default=0xFF
@@ -303,14 +314,14 @@ void NetworkController::returnStatus()
 		 addressParameter=0;
 		 addressParameter=tabParameter[0];
 		 addressParameter=addressParameter+ (tabParameter[1] << 8);
-		 Serial.println("addressParameter: ");
-		 Serial.println(addressParameter);
+		 DEBUG_SERIAL.println("addressParameter: ");
+		 DEBUG_SERIAL.println(addressParameter);
 		 
 		 numberParameter=0;
 		 numberParameter=tabParameter[2];
 		 numberParameter=numberParameter + (tabParameter[3] << 8);
-		 Serial.println("numberParameter: ");
-		 Serial.println(numberParameter);
+		 DEBUG_SERIAL.println("numberParameter: ");
+		 DEBUG_SERIAL.println(numberParameter);
 		 
 		 
 		 //Lenght_High
@@ -336,32 +347,32 @@ void NetworkController::returnStatus()
 		 returnPacket[11+index_tabParameter]=crc_compute >> 8;
 		 
 		 //
-		 Serial.println(" ");
-		 Serial.println("Retour");		
-		 Serial.println(returnPacket[0]);	//Header
-		 Serial.println(returnPacket[1]);
-		 Serial.println(returnPacket[2]);
-		 Serial.println(returnPacket[3]);	//Reserved
-		 Serial.println(returnPacket[4]);	//Id
-		 Serial.println(returnPacket[5]);	//Lenght
-		 Serial.println(returnPacket[6]);
-		 Serial.println(returnPacket[7]);	//Instruct
-		 Serial.println(returnPacket[8]);	//Error
-		 Serial.println(returnPacket[9]);	//Param
-		 Serial.println(returnPacket[10]);	
+		 DEBUG_SERIAL.println(" ");
+		 DEBUG_SERIAL.println("Retour");		
+		 DEBUG_SERIAL.println(returnPacket[0]);	//Header
+		 DEBUG_SERIAL.println(returnPacket[1]);
+		 DEBUG_SERIAL.println(returnPacket[2]);
+		 DEBUG_SERIAL.println(returnPacket[3]);	//Reserved
+		 DEBUG_SERIAL.println(returnPacket[4]);	//Id
+		 DEBUG_SERIAL.println(returnPacket[5]);	//Lenght
+		 DEBUG_SERIAL.println(returnPacket[6]);
+		 DEBUG_SERIAL.println(returnPacket[7]);	//Instruct
+		 DEBUG_SERIAL.println(returnPacket[8]);	//Error
+		 DEBUG_SERIAL.println(returnPacket[9]);	//Param
+		 DEBUG_SERIAL.println(returnPacket[10]);	
 		
 		 
-		 Serial.print("crc:");	
-		 Serial.println(crc_compute);	
-		 Serial.println(returnPacket[11]);	//CRC
-		 Serial.println(returnPacket[12]);
+		 DEBUG_SERIAL.print("crc:");	
+		 DEBUG_SERIAL.println(crc_compute);	
+		 DEBUG_SERIAL.println(returnPacket[11]);	//CRC
+		 DEBUG_SERIAL.println(returnPacket[12]);
 		 tab_lenght=12+index_tabParameter;
-		 Serial.write(returnPacket, tab_lenght);
+		 DEBUG_SERIAL.write(returnPacket, tab_lenght);
 		 
 		 digitalWrite(2, LOW);
-		 Serial1.write(returnPacket, tab_lenght);
+		 DXL_SERIAL.write(returnPacket, tab_lenght);
 		 resetMachineState();
-		 Serial1.flush();
+		 DXL_SERIAL.flush();
 		 digitalWrite(2, HIGH);
 		 break;
 	
@@ -372,8 +383,8 @@ void NetworkController::returnStatus()
 		 addressParameter=0;
 		 addressParameter=tabParameter[0];
 		 addressParameter=addressParameter+ (tabParameter[1] << 8);
-		 Serial.println("addressParameter: ");
-		 Serial.println(addressParameter);
+		 DEBUG_SERIAL.println("addressParameter: ");
+		 DEBUG_SERIAL.println(addressParameter);
 		 
 		 numberParameter = (messageLength - 5); // 5 = Instruction (1) + Address (2) + CRC (2)   
 		 
@@ -408,29 +419,29 @@ void NetworkController::returnStatus()
 		 returnPacket[10]=crc_compute >> 8;
 		 
 		 //
-		 Serial.println(" ");
-		 Serial.println("Retour");		
-		 Serial.println(returnPacket[0]);	//Header
-		 Serial.println(returnPacket[1]);
-		 Serial.println(returnPacket[2]);
-		 Serial.println(returnPacket[3]);	//Reserved
-		 Serial.println(returnPacket[4]);	//Id
-		 Serial.println(returnPacket[5]);	//Lenght
-		 Serial.println(returnPacket[6]);
-		 Serial.println(returnPacket[7]);	//Instruct
-		 Serial.println(returnPacket[8]);	//Error
+		 DEBUG_SERIAL.println(" ");
+		 DEBUG_SERIAL.println("Retour");		
+		 DEBUG_SERIAL.println(returnPacket[0]);	//Header
+		 DEBUG_SERIAL.println(returnPacket[1]);
+		 DEBUG_SERIAL.println(returnPacket[2]);
+		 DEBUG_SERIAL.println(returnPacket[3]);	//Reserved
+		 DEBUG_SERIAL.println(returnPacket[4]);	//Id
+		 DEBUG_SERIAL.println(returnPacket[5]);	//Lenght
+		 DEBUG_SERIAL.println(returnPacket[6]);
+		 DEBUG_SERIAL.println(returnPacket[7]);	//Instruct
+		 DEBUG_SERIAL.println(returnPacket[8]);	//Error
 	
-		 Serial.print("crc:");	
-		 Serial.println(crc_compute);	
-		 Serial.println(returnPacket[9]);	//CRC
-		 Serial.println(returnPacket[10]);
+		 DEBUG_SERIAL.print("crc:");	
+		 DEBUG_SERIAL.println(crc_compute);	
+		 DEBUG_SERIAL.println(returnPacket[9]);	//CRC
+		 DEBUG_SERIAL.println(returnPacket[10]);
 		 tab_lenght=11;     		// 11= Header (3) + reserved (1) + id (1) + Lenght (2) + Instruction (1) + error (1) + CRC (2)
-		 Serial.write(returnPacket, tab_lenght);
+		 DEBUG_SERIAL.write(returnPacket, tab_lenght);
 		 
 		 digitalWrite(2, LOW);
-		 Serial1.write(returnPacket, tab_lenght);
+		 DXL_SERIAL.write(returnPacket, tab_lenght);
 		 resetMachineState();
-		 Serial1.flush();
+		 DXL_SERIAL.flush();
 		 digitalWrite(2, HIGH);
 		 break;
 		 
@@ -441,19 +452,19 @@ void NetworkController::returnStatus()
 		 switch(tabParameter[0])
 		  {
 			 case 0xFF:
-			 #define MODEL_NUMBER 350
-			 ID=1;
-			 #define BAUDRATE 1000000
+			//  #define MODEL_NUMBER 350
+			//  ID=1;
+			//  #define BAUDRATE 1000000
 			 
 			 break;
 			
 			 case 0x01:
-			 #define MODEL_NUMBER 350
-			 #define BAUDRATE 1000000
+			//  #define MODEL_NUMBER 350
+			//  #define BAUDRATE 1000000
 			 break;
 			 
 			 case 0x02:
-			 #define MODEL_NUMBER 350
+			//  #define MODEL_NUMBER 350
 			 break;
 			 
 			 default:
@@ -483,29 +494,29 @@ void NetworkController::returnStatus()
 		 returnPacket[9]=crc_compute & 0xFF;
 		 returnPacket[10]=crc_compute >> 8;
 		 //
-		 Serial.println(" ");
-		 Serial.println("Retour");		
-		 Serial.println(returnPacket[0]);	//Header
-		 Serial.println(returnPacket[1]);
-		 Serial.println(returnPacket[2]);
-		 Serial.println(returnPacket[3]);	//Reserved
-		 Serial.println(returnPacket[4]);	//Id
-		 Serial.println(returnPacket[5]);	//Lenght
-		 Serial.println(returnPacket[6]);
-		 Serial.println(returnPacket[7]);	//Instruct
-		 Serial.println(returnPacket[8]);	//Error
+		 DEBUG_SERIAL.println(" ");
+		 DEBUG_SERIAL.println("Retour");		
+		 DEBUG_SERIAL.println(returnPacket[0]);	//Header
+		 DEBUG_SERIAL.println(returnPacket[1]);
+		 DEBUG_SERIAL.println(returnPacket[2]);
+		 DEBUG_SERIAL.println(returnPacket[3]);	//Reserved
+		 DEBUG_SERIAL.println(returnPacket[4]);	//Id
+		 DEBUG_SERIAL.println(returnPacket[5]);	//Lenght
+		 DEBUG_SERIAL.println(returnPacket[6]);
+		 DEBUG_SERIAL.println(returnPacket[7]);	//Instruct
+		 DEBUG_SERIAL.println(returnPacket[8]);	//Error
 	
-		 Serial.print("crc:");	
-		 Serial.println(crc_compute);	
-		 Serial.println(returnPacket[9]);	//CRC
-		 Serial.println(returnPacket[10]);
+		 DEBUG_SERIAL.print("crc:");	
+		 DEBUG_SERIAL.println(crc_compute);	
+		 DEBUG_SERIAL.println(returnPacket[9]);	//CRC
+		 DEBUG_SERIAL.println(returnPacket[10]);
 		 tab_lenght=11;     // 11= Header (3) + reserved (1) + id (1) + Lenght (2) + Instruction (1) + error (1) + CRC (2)
-		 Serial.write(returnPacket, tab_lenght);
+		 DEBUG_SERIAL.write(returnPacket, tab_lenght);
 		 
 		 digitalWrite(2, LOW);
-		 Serial1.write(returnPacket, tab_lenght);
+		 DXL_SERIAL.write(returnPacket, tab_lenght);
 		 resetMachineState();
-		 Serial1.flush();
+		 DXL_SERIAL.flush();
 		 digitalWrite(2, HIGH);
 		 break;
 	}

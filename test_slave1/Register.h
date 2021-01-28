@@ -2,16 +2,13 @@
 #define REGISTER_H
 
 #include "Arduino.h"
-#include <EEPROM.h>
-#include "networkcontroller.h"
+// #include <EEPROM.h>
+#include "NetworkController.h"
 
 /* 
 "Register.h" give value to tabRegister[]
 tabRegister is a table who contains Value to simulate several Register of a Motor XL-320
 */
-
-
-
 
 	/*
 	tabRegister[4]=;
